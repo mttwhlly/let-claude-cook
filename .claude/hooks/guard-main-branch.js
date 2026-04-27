@@ -9,7 +9,7 @@
 async function main() {
   const chunks = [];
   for await (const chunk of process.stdin) chunks.push(chunk);
-  const raw = Buffer.concat(chunks).toString("utf8");
+  const raw = Buffer.concat(chunks).toString('utf8');
 
   let input;
   try {
@@ -18,28 +18,47 @@ async function main() {
     process.exit(0);
   }
 
-  const command = input?.tool_input?.command || "";
+  const command = input?.tool_input?.command || '';
 
   const blocked = [
-    { pattern: /git\s+push\s+.*\bmain\b/, reason: "pushing directly to main is not allowed" },
-    { pattern: /git\s+push\s+.*\bmaster\b/, reason: "pushing directly to master is not allowed" },
-    { pattern: /git\s+push\s+--force/, reason: "force push is not allowed" },
-    { pattern: /git\s+reset\s+--hard/, reason: "git reset --hard is not allowed — use a branch or stash instead" },
+    { pattern: /git\s+push\s+.*\bmain\b/, reason: 'pushing directly to main is not allowed' },
+    { pattern: /git\s+push\s+.*\bmaster\b/, reason: 'pushing directly to master is not allowed' },
+    { pattern: /git\s+push\s+--force/, reason: 'force push is not allowed' },
+    {
+      pattern: /git\s+reset\s+--hard/,
+      reason: 'git reset --hard is not allowed — use a branch or stash instead',
+    },
+    {
+      pattern: /git\s+clean\s+.*-f/,
+      reason: 'git clean -f is not allowed — it permanently deletes untracked files',
+    },
+    {
+      pattern: /git\s+branch\s+-D\b/,
+      reason: 'git branch -D is not allowed — use -d (safe delete) instead',
+    },
+    {
+      pattern: /git\s+checkout\s+\./,
+      reason: 'git checkout . is not allowed — it discards all working tree changes',
+    },
+    {
+      pattern: /git\s+restore\s+\./,
+      reason: 'git restore . is not allowed — it discards all working tree changes',
+    },
   ];
 
   for (const { pattern, reason } of blocked) {
     if (pattern.test(command)) {
       const output = {
         hookSpecificOutput: {
-          hookEventName: "PreToolUse",
+          hookEventName: 'PreToolUse',
           decision: {
-            behavior: "block",
+            behavior: 'block',
             message: [
               `🚫 Blocked: ${reason}.`,
-              "",
-              "Branch convention: feature/<pod>/<ticket-id>-<short-description>",
-              "Open a PR instead of pushing directly to main.",
-            ].join("\n"),
+              '',
+              'Branch convention: feature/<pod>/<ticket-id>-<short-description>',
+              'Open a PR instead of pushing directly to main.',
+            ].join('\n'),
           },
         },
       };
