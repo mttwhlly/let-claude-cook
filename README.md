@@ -20,6 +20,9 @@ slash commands, and sub-agents — built for use across CAQH Nexus pod repos.
   - Install: [nodejs.org](https://nodejs.org) or `brew install node`
 - **Claude Code** — `npm install -g @anthropic-ai/claude-code`
 - **Git**
+- **jira-cli** (optional — required for `to-prd`, `to-issues`, `qa` skills)
+  - Install: `brew install ankitpokhrel/tap/jira-cli`
+  - Setup: `jira init` → choose **Local (Data Center / Server)** → `https://jira.caqh.org`
 
 ---
 
@@ -65,18 +68,27 @@ let-claude-cook/
 │           ├── ProviderCard.tsx
 │           ├── ProviderCard.test.tsx
 │           └── index.ts
+├── .husky/
+│   └── pre-commit                   ← lint-staged → typecheck → test on every commit
 ├── .claude/
 │   ├── settings.json                ← Shared hooks (committed)
 │   ├── settings.local.json          ← Personal overrides (gitignored)
 │   ├── hooks/
 │   │   ├── check-design-tokens.js   ← Blocks hardcoded colors in .ts/.tsx
-│   │   ├── guard-main-branch.js     ← Blocks push to main + git reset --hard
+│   │   ├── guard-main-branch.js     ← Blocks push/reset/clean/force-delete
 │   │   ├── log-file-change.js       ← Audit log of every file Claude touches
 │   │   └── session-context.js       ← Loads git status at session start
 │   ├── skills/
-│   │   ├── mui-patterns/SKILL.md    ← MUI + design token patterns
-│   │   ├── ado-pr-workflow/SKILL.md ← ADO branch/PR/commit standards
-│   │   └── nexus-accessibility/SKILL.md ← WCAG 2.1 AA patterns
+│   │   ├── mui-patterns/            ← MUI + design token patterns
+│   │   ├── ado-pr-workflow/         ← ADO branch/PR/commit standards
+│   │   ├── nexus-accessibility/     ← WCAG 2.1 AA patterns for React/MUI
+│   │   ├── tdd/                     ← Red-green-refactor loop + reference files
+│   │   ├── write-a-skill/           ← How to author new skills
+│   │   ├── to-prd/                  ← Conversation → Jira Epic
+│   │   ├── to-issues/               ← Plan → Jira tickets (vertical slices)
+│   │   ├── qa/                      ← QA session → Jira Bug tickets
+│   │   ├── caveman/                 ← Ultra-compressed response mode
+│   │   └── zoom-out/                ← Module map for unfamiliar code
 │   ├── commands/
 │   │   ├── pr-review.md             ← /pr-review
 │   │   ├── new-component.md         ← /new-component <Name>
@@ -95,7 +107,7 @@ let-claude-cook/
 ## Setup
 
 ```bash
-git clone https://github.com/<your-handle>/let-claude-cook.git
+git clone https://github.com/mttwhlly/let-claude-cook.git
 cd let-claude-cook
 npm install
 claude  # opens Claude Code in this directory
@@ -108,36 +120,66 @@ as long as `node` is in your PATH.
 
 ---
 
+## Using the Skills
+
+Skills are on-demand expertise loaded when relevant. Invoke them with `/skill-name`:
+
+| Skill                 | Trigger                               | What it does                                      |
+| --------------------- | ------------------------------------- | ------------------------------------------------- |
+| `tdd`                 | "use TDD", "red-green-refactor"       | Guides a test-first dev loop with vertical slices |
+| `to-prd`              | "create a PRD", "formalize this plan" | Synthesizes context → Jira Epic                   |
+| `to-issues`           | "break this into tickets"             | Plan → Jira tickets with blocking relationships   |
+| `qa`                  | "QA session", "file a bug"            | Conversational bug filing → Jira Bug tickets      |
+| `write-a-skill`       | "create a skill"                      | Scaffolds a new SKILL.md with correct structure   |
+| `caveman`             | "caveman mode", "less tokens"         | Ultra-compressed responses, ~75% fewer tokens     |
+| `zoom-out`            | "zoom out", "map this code"           | Module/caller map for unfamiliar code             |
+| `mui-patterns`        | Working with MUI/theme                | Token usage, spacing, component patterns          |
+| `ado-pr-workflow`     | Creating branches/PRs                 | Branch naming, commit format, PR template         |
+| `nexus-accessibility` | Building UI                           | WCAG 2.1 AA patterns for React/MUI                |
+
+Jira skills (`to-prd`, `to-issues`, `qa`) require
+[jira-cli](https://github.com/ankitpokhrel/jira-cli) configured for
+`https://jira.caqh.org` (Data Center).
+
+---
+
 ## Using the Slash Commands
 
-In a Claude Code session:
-
-| Command | What it does |
-|---------|-------------|
-| `/pr-review` | Reviews current branch diff against CAQH standards |
-| `/new-component ProviderCard` | Scaffolds a new component with tests |
-| `/triage NX-1234 login is broken` | Investigates and plans a fix |
-| `/weekly-impact <your notes>` | Generates exec + personal impact reports |
+| Command                           | What it does                                       |
+| --------------------------------- | -------------------------------------------------- |
+| `/pr-review`                      | Reviews current branch diff against CAQH standards |
+| `/new-component ProviderCard`     | Scaffolds a new component with tests               |
+| `/triage NX-1234 login is broken` | Investigates and plans a fix                       |
+| `/weekly-impact <your notes>`     | Generates exec + personal impact reports           |
 
 ---
 
 ## What the Hooks Enforce
 
-| Hook | Trigger | What it blocks/logs |
-|------|---------|-------------------|
-| `check-design-tokens.js` | Before any `.ts/.tsx` write | Hardcoded hex/rgb colors |
-| `guard-main-branch.js` | Before any bash command | Push to main, `git reset --hard` |
-| `log-file-change.js` | After every file write | Appends to `.claude/logs/changes.jsonl` |
-| `session-context.js` | Session start | Prints branch + git status to Claude |
+### Claude Code hooks (`.claude/hooks/`)
+
+| Hook                     | Trigger                     | What it blocks/logs                                                                                  |
+| ------------------------ | --------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `check-design-tokens.js` | Before any `.ts/.tsx` write | Hardcoded hex/rgb colors                                                                             |
+| `guard-main-branch.js`   | Before any bash command     | Push to main, `git reset --hard`, `git clean -f`, `git branch -D`, `git checkout .`, `git restore .` |
+| `log-file-change.js`     | After every file write      | Appends to `.claude/logs/changes.jsonl`                                                              |
+| `session-context.js`     | Session start               | Prints branch + git status to Claude                                                                 |
+
+### Git hooks (`.husky/`)
+
+| Hook         | When         | What it runs                                |
+| ------------ | ------------ | ------------------------------------------- |
+| `pre-commit` | Every commit | Prettier (staged files) → typecheck → tests |
 
 ---
 
 ## Extending to a Nexus Pod Repo
 
-1. Copy `.claude/` into the pod repo
-2. Update `CLAUDE.md` with pod-specific context (pod name, Jira project, ADO board)
+1. Copy `.claude/` and `.husky/` into the pod repo
+2. Update `CLAUDE.md` with pod-specific context (pod name, Jira project key, ADO repo)
 3. Add pod-specific skills if needed (e.g. a data-domain skill for that pod)
-4. Commit — hooks and skills apply to everyone running Claude Code in that repo
+4. Run `npm install` to get Husky wired up via the `prepare` script
+5. Commit — hooks and skills apply to everyone running Claude Code in that repo
 
 The `check-design-tokens.js` hook and token standards carry over as-is.
 Skills can be overridden or extended per pod via nested `CLAUDE.md` files.
