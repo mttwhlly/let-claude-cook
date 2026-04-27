@@ -1,31 +1,34 @@
 ---
 name: to-issues
-description: Break a plan, spec, or PRD into independently-grabbable Azure DevOps work items using tracer-bullet vertical slices. Use when user wants to convert a plan into ADO work items, create implementation tickets, or break down a feature into tasks.
+description: Break a plan, spec, or PRD into independently-grabbable Jira tickets using tracer-bullet vertical slices. Use when user wants to convert a plan into Jira tickets, create implementation stories, or break down a feature into tasks.
 ---
 
-# To Issues (Azure DevOps)
+# To Issues (Jira)
 
-Break a plan into independently-workable ADO work items using vertical slices
+Break a plan into independently-workable Jira tickets using vertical slices
 (tracer bullets).
 
 ## Prerequisites
 
-Azure CLI with DevOps extension:
+[jira-cli](https://github.com/ankitpokhrel/jira-cli) (ankitpokhrel/jira-cli):
 
 ```bash
-az extension add --name azure-devops
-az devops configure --defaults organization=https://dev.azure.com/<org> project=<project>
+# Install (Mac)
+brew install ankitpokhrel/tap/jira-cli
+
+# First-time setup
+jira init
 ```
 
 ## Process
 
 ### 1. Gather context
 
-Work from the current conversation. If the user provides an ADO work item ID,
-fetch it:
+Work from the current conversation. If the user provides a Jira issue key
+(e.g. `NX-123`), fetch it:
 
 ```bash
-az boards work-item show --id <id>
+jira issue view NX-123
 ```
 
 ### 2. Explore codebase (if not already done)
@@ -58,7 +61,7 @@ Show as a numbered list. For each slice:
 - **Title**: short name
 - **Type**: HITL / AFK
 - **Blocked by**: which slices must complete first
-- **ADO type**: User Story / Task / Bug
+- **Jira type**: Story / Task / Bug
 
 Ask:
 
@@ -68,28 +71,33 @@ Ask:
 
 Iterate until approved.
 
-### 5. Create ADO work items
+### 5. Create Jira tickets
 
-Create in **dependency order** (blockers first) so you can reference real IDs
+Create in **dependency order** (blockers first) so you can reference real keys
 in the "Blocked by" field.
 
 ```bash
-az boards work-item create \
-  --title "<title>" \
-  --type "User Story" \
-  --description "<body>"
+jira issue create \
+  --project <PROJECT-KEY> \
+  --type Story \
+  --summary "<title>" \
+  --body "<body>"
 ```
 
-To link a blocking relationship after both items exist:
+To link a blocking relationship after both tickets exist:
 
 ```bash
-az boards work-item relation add \
-  --id <blocked-item-id> \
-  --target-id <blocker-id> \
-  --relation-type "Predecessor"
+jira issue link <blocked-key> <blocker-key> "is blocked by"
+# e.g. jira issue link NX-456 NX-123 "is blocked by"
 ```
 
-## Work Item Body Template
+To set a parent Epic:
+
+```bash
+jira issue move <story-key> --parent <epic-key>
+```
+
+## Ticket Body Template
 
 ```
 ## What to build
@@ -105,16 +113,16 @@ not layer-by-layer implementation.
 
 ## Blocked by
 
-- #<work-item-id> — <title>
+- <TICKET-KEY> — <title>
 
 Or "None — can start immediately" if no blockers.
 ```
 
-## ADO Work Item Type Guide
+## Jira Issue Type Guide
 
-| Slice type                               | ADO type   |
-| ---------------------------------------- | ---------- |
-| End-user visible feature slice           | User Story |
-| Technical task with no direct user story | Task       |
-| Known defect to fix                      | Bug        |
-| Group of related stories                 | Feature    |
+| Slice type                               | Jira type |
+| ---------------------------------------- | --------- |
+| End-user visible feature slice           | Story     |
+| Technical task with no direct user story | Task      |
+| Known defect to fix                      | Bug       |
+| Group of related stories                 | Epic      |

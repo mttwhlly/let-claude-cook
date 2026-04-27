@@ -1,21 +1,24 @@
 ---
 name: to-prd
-description: Turn the current conversation context into a PRD and submit it as an Azure DevOps work item (Feature or Epic). Use when user wants to create a PRD from the current context, formalize a plan, or file a spec as an ADO work item.
+description: Turn the current conversation context into a PRD and submit it as a Jira Epic or Story. Use when user wants to create a PRD from the current context, formalize a plan, or file a spec as a Jira ticket.
 ---
 
-# To PRD (Azure DevOps)
+# To PRD (Jira)
 
 Takes the current conversation context and codebase understanding and produces a
-PRD filed as an ADO Feature work item. Do NOT interview the user — synthesize
-what is already known.
+PRD filed as a Jira Epic. Do NOT interview the user — synthesize what is already
+known.
 
 ## Prerequisites
 
-Azure CLI with DevOps extension:
+[jira-cli](https://github.com/ankitpokhrel/jira-cli) (ankitpokhrel/jira-cli):
 
 ```bash
-az extension add --name azure-devops
-az devops configure --defaults organization=https://dev.azure.com/<org> project=<project>
+# Install (Mac)
+brew install ankitpokhrel/tap/jira-cli
+
+# First-time setup
+jira init
 ```
 
 ## Process
@@ -28,14 +31,15 @@ az devops configure --defaults organization=https://dev.azure.com/<org> project=
 
 3. Write the PRD using the template below.
 
-4. File it as an ADO work item:
+4. File it as a Jira Epic:
    ```bash
-   az boards work-item create \
-     --title "<PRD title>" \
-     --type "Feature" \
-     --description "<PRD body as HTML or plain text>"
+   jira issue create \
+     --project <PROJECT-KEY> \
+     --type Epic \
+     --summary "<PRD title>" \
+     --body "<PRD body>"
    ```
-   Print the created work item ID and URL.
+   Print the created issue key (e.g. `NX-123`) and URL.
 
 ## PRD Template
 
@@ -80,10 +84,10 @@ What is explicitly not being built in this PRD.
 Any other relevant notes.
 ```
 
-## ADO Work Item Type Guide
+## Jira Issue Type Guide
 
-| PRD type                   | ADO type           |
-| -------------------------- | ------------------ |
-| Large multi-sprint feature | Epic               |
-| Single-sprint feature      | Feature            |
-| Single task / bug fix      | User Story or Task |
+| PRD type                   | Jira type |
+| -------------------------- | --------- |
+| Large multi-sprint feature | Epic      |
+| Single-sprint feature      | Story     |
+| Single task / bug fix      | Task      |

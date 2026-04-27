@@ -1,21 +1,24 @@
 ---
 name: qa
-description: Interactive QA session where user reports bugs or issues conversationally, and the agent files Azure DevOps work items. Explores the codebase for context. Use when user wants to do a QA session, report bugs conversationally, file ADO bugs, or mentions "QA session".
+description: Interactive QA session where user reports bugs or issues conversationally, and the agent files Jira tickets. Explores the codebase for context. Use when user wants to do a QA session, report bugs conversationally, file Jira bugs, or mentions "QA session".
 ---
 
-# QA Session (Azure DevOps)
+# QA Session (Jira)
 
-Run an interactive QA session. The user describes problems. You clarify,
-explore the codebase for context, and file ADO work items that are durable,
-user-focused, and use the project's domain language.
+Run an interactive QA session. The user describes problems. You clarify, explore
+the codebase for context, and file Jira tickets that are durable, user-focused,
+and use the project's domain language.
 
 ## Prerequisites
 
-Azure CLI with DevOps extension:
+[jira-cli](https://github.com/ankitpokhrel/jira-cli) (ankitpokhrel/jira-cli):
 
 ```bash
-az extension add --name azure-devops
-az devops configure --defaults organization=https://dev.azure.com/<org> project=<project>
+# Install (Mac)
+brew install ankitpokhrel/tap/jira-cli
+
+# First-time setup
+jira init
 ```
 
 ## For each issue the user raises
@@ -38,7 +41,7 @@ While talking, kick off an Agent (subagent_type=Explore) in the background to:
 - Understand what the feature is supposed to do
 - Identify the user-facing behavior boundary
 
-Goal is NOT to find a fix — it's to write a better work item. The item itself
+Goal is NOT to find a fix — it's to write a better ticket. The ticket itself
 should NOT reference specific files, line numbers, or implementation details.
 
 ### 3. Single issue or breakdown?
@@ -54,22 +57,29 @@ should NOT reference specific files, line numbers, or implementation details.
 - One behavior wrong in one place
 - All symptoms from the same root cause
 
-### 4. File the ADO work item(s)
+### 4. File the Jira ticket(s)
 
-File immediately — don't ask user to review first. Print the URL after filing.
+File immediately — don't ask user to review first. Print the issue key and URL
+after filing.
 
 **Single bug:**
 
 ```bash
-az boards work-item create \
-  --title "<short descriptive title>" \
-  --type "Bug" \
-  --description "<body>"
+jira issue create \
+  --project <PROJECT-KEY> \
+  --type Bug \
+  --summary "<short descriptive title>" \
+  --body "<body>"
 ```
 
-**For a breakdown**, create in dependency order so you can reference real IDs.
+**For a breakdown**, create tickets in dependency order so you can reference
+real keys. Then link them:
 
-#### Work item body template
+```bash
+jira issue link <blocked-key> <blocker-key> "is blocked by"
+```
+
+#### Ticket body template
 
 ```
 ## What happened
@@ -91,7 +101,7 @@ az boards work-item create \
 no file paths]
 ```
 
-#### Rules for all work item bodies
+#### Rules for all ticket bodies
 
 - **No file paths or line numbers** — these go stale
 - **Use project domain language** (check UBIQUITOUS_LANGUAGE.md if it exists)
@@ -99,17 +109,7 @@ no file paths]
 - **Reproduction steps are mandatory** — ask the user if you can't determine them
 - **Keep it concise** — readable in 30 seconds
 
-For breakdowns, create a parent Feature item first, then child User Story/Task
-items linked to it:
-
-```bash
-az boards work-item relation add \
-  --id <child-id> \
-  --target-id <parent-id> \
-  --relation-type "System.LinkTypes.Hierarchy-Reverse"
-```
-
 ### 5. Continue the session
 
-After filing, print all created work item IDs/URLs and ask: "Next issue, or
-are we done?" Each issue is independent — don't batch them.
+After filing, print all created ticket keys/URLs and ask: "Next issue, or are
+we done?" Each issue is independent — don't batch them.
