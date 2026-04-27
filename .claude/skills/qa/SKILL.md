@@ -17,8 +17,20 @@ and use the project's domain language.
 # Install (Mac)
 brew install ankitpokhrel/tap/jira-cli
 
-# First-time setup
+# First-time setup — choose "Local (Data Center / Server)" when prompted
 jira init
+# Server URL: https://jira.caqh.org
+# Auth type:  basic (username + password)
+#             or bearer (Personal Access Token — Jira 8.14+)
+```
+
+Or via environment variables:
+
+```bash
+export JIRA_AUTH_TYPE=basic          # or bearer for PAT
+export JIRA_SERVER=https://jira.caqh.org
+export JIRA_LOGIN=<your-username>
+export JIRA_API_TOKEN=<your-password-or-PAT>
 ```
 
 ## For each issue the user raises
