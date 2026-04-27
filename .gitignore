@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.DS_Store
+
+# Claude Code personal overrides
+.claude/settings.local.json
+
+# Hook audit logs
+.claude/logs/
+
+# Build artifacts
+*.tsbuildinfo
